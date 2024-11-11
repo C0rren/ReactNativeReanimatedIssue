@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 /**
  * Sample React Native App
  * https://github.com/facebook/react-native
@@ -6,113 +7,121 @@
  */
 
 import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import {Pressable, SafeAreaView, ScrollView, Text, View} from 'react-native';
+import Animated, {
+  Easing,
+  interpolate,
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const BUTTON_TRANSITION_TIME = 500;
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+const App = () => {
+  const pressed = useSharedValue<number>(0);
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+  const animatedBoxShadow = useAnimatedStyle(() => {
+    const blurRadius = interpolate(pressed.value, [0, 1], [10, 0]);
+    const color = interpolateColor(
+      pressed.value,
+      [0, 1],
+      // from black to yellow - will not work <---!!!!
+      ['rgba(0, 0, 0, 0.5)', 'rgba(255, 255, 0, 0.5)'], // will not work!! <---!!!!
+    );
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+    const boxShadow = `0px 4px ${blurRadius}px 0px ${color}`;
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+    return {
+      boxShadow,
+    };
+  });
+
+  const backgroundColorStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      pressed.value,
+      [0, 1],
+      ['lightblue', 'red'],
+    );
+
+    return {
+      backgroundColor,
+    };
+  });
+
+  const handlePressIn = () => {
+    pressed.value = withTiming(1, {
+      duration: BUTTON_TRANSITION_TIME,
+      easing: Easing.out(Easing.ease),
+    });
+  };
+
+  const handlePressOut = () => {
+    pressed.value = withTiming(0, {
+      duration: BUTTON_TRANSITION_TIME,
+      easing: Easing.out(Easing.ease),
+    });
   };
 
   return (
     <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
+      <ScrollView style={backgroundStyle}>
         <View
           style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
+            padding: 24,
           }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+          <Text
+            style={{
+              fontSize: 18,
+              color: 'black',
+              fontWeight: 'bold',
+              marginBottom: 16,
+            }}>
+            The background color animation will work, but not the shadow
+            animation.
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: 'black',
+              marginBottom: 8,
+            }}>
+            The shadow animation will also not work if using the BoxShadowValue
+            type instead of a string, it does not make a difference.
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              color: 'black',
+            }}>
+            Please note that the shadow renders correctly on first render, but
+            not after the button has been pressed once
+          </Text>
+          <AnimatedPressable
+            style={[
+              backgroundColorStyle,
+              animatedBoxShadow,
+              {
+                padding: 16,
+                borderRadius: 100,
+                marginVertical: 16,
+              },
+            ]}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}>
+            <Text>Hello I am button with shadow</Text>
+          </AnimatedPressable>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+const backgroundStyle = {
+  backgroundColor: 'lightgrey',
+  flex: 1,
+};
 
 export default App;
